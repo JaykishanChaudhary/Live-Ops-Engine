@@ -6,6 +6,9 @@ const OfferSchema = new mongoose.Schema({
   offer_id: {
     type: String,
     required: true,
+    set: function (value) {
+      return value.toString();
+    }
   },
   offer_title: {
     type: String,
