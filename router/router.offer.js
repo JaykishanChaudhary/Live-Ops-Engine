@@ -1,7 +1,11 @@
 const router=require('express').Router();
 const OfferModel=require('../Models/Offer.model');
-const JwtAuth=require('../AuthMiddleWare/AuthMiddleWare')
+const JwtAuth=require('../AuthMiddleWare/AuthMiddleWare');
+const PlayerModel=require('../Models/Players.model');
+const stringTemplate = require('string-template');
 
+const jwt=require('jsonwebtoken');
+ 
 
 router.post('/Offer',JwtAuth,async(req,res)=>{
     try{
@@ -20,6 +24,38 @@ router.post('/Offer',JwtAuth,async(req,res)=>{
     }
 })
 
+
+// fetch offerconst offerFetchCtrl = async (req, res) =>
+//  {    
+//     const { age, installed_days } = req.body    
+//     const validOffers = []    
+//     try {        
+//         const offer = await Offer.find({})        
+//         offer.filter((offer) => { const rules = offer.target.split("and")            
+//         //['age > 25', 'installed_days < 5']            
+//         rules.forEach((rule) => { 
+//             let ruleKey = {}                
+//             if (rule.includes(">")) 
+//             {  
+//                 ruleKey = { key: rule.trim().split(">")[0].trim(),
+//                  value: parseInt(rule.trim().split(">")[1]),                    
+//                 }                    
+//                 if (req.body[ruleKey] > ruleKey.value) {
+//                     validOffers.push(offer)                    
+//                 } 
+//             }else{
+//                 ruleKey = { key: rule.trim().split("<")[0].trim(),
+//                             value: parseInt(rule.trim().split("<")[1]),     
+//                            }                    
+//                            validOffers.push(offer)                
+//                 }    })        })  
+//                       res.status(200).json({         
+//                            status: 'Success',         
+//                            data: validOffers,     
+//                          }) }
+//                           catch (error) 
+//                           {    res.status(400).json(error.message)    }}
+
 router.get('/getOffer',JwtAuth,async(req,res)=>{
     // const {offer_id,offer_title,offer_description,offer_image,offer_sort_order,content,schedule,target,pricing}=req.params;
 //     page = Page number 
@@ -27,16 +63,33 @@ router.get('/getOffer',JwtAuth,async(req,res)=>{
 // attribute = Offer field to search 
 // query
 try{
-    const {page,records,attribute,query}=req.query;
+const {page,records,attribute,query}=req.query;
+const jesonWToken=req.headers['token'];
+// console.log(jesonWToken,"hi");
+const decoded=jwt.verify(jesonWToken,'JayPass');
+const installed_days=decoded.installed_days;
+const age=decoded.age;
+console.log(installed_days,age);
+const CurrentPage=parseInt(page)||1;
+const PageSize=parseInt(records);
+const skip=(CurrentPage-1)*PageSize
 console.log(page,records,attribute,query);
-const OfferData=await OfferModel.find({[attribute]:{$regex:query,$options:"i"}});
-console.log(OfferData)
+const targetQuery = stringTemplate(OfferModel.target, { age, installed_days });
+const OfferData = await OfferModel
+  .find({ [attribute]: { $regex: query, $options: 'i' } })
+  .where(targetQuery)
+  .skip(skip)
+  .limit(pageSize);
+console.log(OfferData.length)
 
+const OfferDataLength=await OfferModel.countDocuments({[attribute]:{$regex:query,$options:"i"}})
+const totalPage=Math.ceil(OfferDataLength/PageSize)
 res.status(200).json({
-    result:OfferData
+    result:OfferData,
+    totalPage:totalPage
 })
 }catch(err){
-    console.log(err)
+    console.log(err.message)
 }
 
 
