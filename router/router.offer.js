@@ -31,7 +31,8 @@ router.post('/Offer',JwtAuth,async(req,res)=>{
 //     const validOffers = []    
 //     try {        
 //         const offer = await Offer.find({})        
-//         offer.filter((offer) => { const rules = offer.target.split("and")            
+//         offer.filter((offer) => 
+//              {const rules = offer.target.split("and")            
 //         //['age > 25', 'installed_days < 5']            
 //         rules.forEach((rule) => { 
 //             let ruleKey = {}                
@@ -56,6 +57,12 @@ router.post('/Offer',JwtAuth,async(req,res)=>{
 //                           catch (error) 
 //                           {    res.status(400).json(error.message)    }}
 
+function CheckEligibility(){
+
+}
+
+
+
 router.get('/getOffer',JwtAuth,async(req,res)=>{
     // const {offer_id,offer_title,offer_description,offer_image,offer_sort_order,content,schedule,target,pricing}=req.params;
 //     page = Page number 
@@ -74,18 +81,31 @@ const CurrentPage=parseInt(page)||1;
 const PageSize=parseInt(records);
 const skip=(CurrentPage-1)*PageSize
 console.log(page,records,attribute,query);
-const targetQuery = stringTemplate(OfferModel.target, { age, installed_days });
-const OfferData = await OfferModel
-  .find({ [attribute]: { $regex: query, $options: 'i' } })
-  .where(targetQuery)
-  .skip(skip)
-  .limit(pageSize);
+// const targetQuery = stringTemplate(OfferModel.target, { age, installed_days });
+// const OfferData = await OfferModel
+//   .find({ [attribute]: { $regex: query, $options: 'i' } })
+// //   .where(targetQuery)
+//   .skip(skip)
+//   .limit(PageSize);
+const OfferData=await OfferModel.find({})
 console.log(OfferData.length)
+let finaloffer=[];
+OfferData.filter((offer)=>{
+    const Rules=offer.target.split("and");
+    console.log(Rules);
+    const Rule1=Rules[0].split("=");
+    const Rule2=Rules[1].split("<");
+    console.log(Rule1[1],Rule2[1]);
+    if(age<=parseInt(Rule1[1])&& installed_days<parseInt(Rule2[1])){
+        finaloffer.push(offer);
+    }
+})
 
-const OfferDataLength=await OfferModel.countDocuments({[attribute]:{$regex:query,$options:"i"}})
-const totalPage=Math.ceil(OfferDataLength/PageSize)
+// const OfferDataLength=await OfferModel.countDocuments({[attribute]:{$regex:query,$options:"i"}})
+
+const totalPage=Math.ceil(finaloffer.length/PageSize)
 res.status(200).json({
-    result:OfferData,
+    result:finaloffer,
     totalPage:totalPage
 })
 }catch(err){
